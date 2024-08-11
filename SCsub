@@ -4,6 +4,7 @@ Import('env')
 
 ros_distro = "galactic"
 cpp_version = "-std=c++17"
+exceptions = "-fexceptions"
 
 ros_include_path = "/opt/ros/" + ros_distro + "/include"
 ros_lib_path = "/opt/ros/" + ros_distro + "/lib"
@@ -24,7 +25,7 @@ env.Append(CPPPATH=["include", ros_include_path])
 env.Append(LIBPATH=[ros_lib_path])
 
 # ROS needs c++ version compilier flag
-env.Append(CCFLAGS=[cpp_version])
+env.Append(CCFLAGS=[cpp_version, exceptions])
 
 # Check with the documentation of the external library to see which library
 # files should be included/linked.
