@@ -1,30 +1,42 @@
-// Copyright 2021 Evan Flynn
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-
-
-/* godot_ros.cpp */
-
 #include "godot_ros/demos/view_port.hpp"
 
-void ViewPort::_bind_methods()
-{
+ViewPort::ViewPort() {
+  rclcpp::init(0, nullptr);
+  m_node = std::make_shared<rclcpp::Node>("godot_image_node");
+}
+
+ViewPort::~ViewPort() {
+  rclcpp::shutdown();
+}
+
+void ViewPort::spin_some() {
+  rclcpp::spin_some(m_node);
+}
+
+void ViewPort::set_topic(const String& topic) {
+  m_pub = m_node->create_publisher<sensor_msgs::msg::Image>(topic.utf8().get_data(), 10);
+}
+
+void ViewPort::pubImage(const Ref<Image> & img) {
+  if (!m_pub) {
+    WARN_PRINT("Publisher not initialized. Call set_topic() first.");
+    return;
+  }
+
+  m_msg = std::make_unique<sensor_msgs::msg::Image>();
+  m_msg->height = img->get_height();
+  m_msg->width = img->get_width();
+  m_msg->encoding = "rgb8";
+  m_msg->is_bigendian = false;
+  m_msg->step = img->get_data().size() / m_msg->height;
+  m_msg->data.resize(img->get_data().size());
+  std::memcpy(&m_msg->data[0], img->get_data().ptr(), img->get_data().size());
+
+  m_pub->publish(std::move(m_msg));
+}
+
+void ViewPort::_bind_methods() {
+  ClassDB::bind_method(D_METHOD("set_topic", "topic"), &ViewPort::set_topic);
   ClassDB::bind_method(D_METHOD("pubImage", "img"), &ViewPort::pubImage);
   ClassDB::bind_method(D_METHOD("spin_some"), &ViewPort::spin_some);
 }
